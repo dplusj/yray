@@ -42,6 +42,7 @@ class SmallMLP(nn.Module):
 # Load feature
 #
 
+@task()
 def load_features():
 
     print("Loading dataset")
@@ -66,7 +67,7 @@ def load_features():
 # Node 2
 # Transform / normalization
 #
-
+@task()
 def normalize_features(data):
 
     print("Normalizing features")
@@ -93,6 +94,7 @@ def normalize_features(data):
 # Training
 #
 
+@task()
 def train_model(
     data,
     hidden_size,
@@ -165,6 +167,7 @@ def train_model(
 # Validation
 #
 
+@task()
 def validate_model(result):
 
     print("Running validation")
@@ -205,6 +208,7 @@ def validate_model(result):
 # Compare all pipelines
 #
 
+@task()
 def compare_models(*results):
 
     print("\n=== MODEL COMPARISON ===")
@@ -229,77 +233,62 @@ def compare_models(*results):
     return best
 
 
-# ============================================================
-# DAG BUILD
-# ============================================================
-
-load_node = DAGNode(load_features)
-
-normalize_node = DAGNode(normalize_features)
-
-train_node = DAGNode(train_model)
-
-validate_node = DAGNode(validate_model)
-
-compare_node = DAGNode(compare_models)
-
-
 #
 # Shared upstream pipeline
 #
 
-dataset = load_node()
+dataset = load_features()
 
-normalized = normalize_node(dataset)
+normalized = normalize_features(dataset)
 
 
 #
 # Pipeline A
 #
 
-train_a = train_node(
+train_a = train_model(
     normalized,
     hidden_size=16,
     lr=1e-3,
     epochs=5,
 )
 
-validate_a = validate_node(train_a)
+validate_a = validate_model(train_a)
 
 
 #
 # Pipeline B
 #
 
-train_b = train_node(
+train_b = train_model(
     normalized,
     hidden_size=64,
     lr=1e-3,
     epochs=5,
 )
 
-validate_b = validate_node(train_b)
+validate_b = validate_model(train_b)
 
 
 #
 # Pipeline C
 #
 
-train_c = train_node(
+train_c = train_model(
     normalized,
     hidden_size=128,
     lr=1e-4,
     epochs=5,
 )
 
-validate_c = validate_node(train_c)
+validate_c = validate_model(train_c)
 
 
 #
 # Final DAG sink
 #
 
-final_graph = compare_node(
+final_graph = compare_models(
     validate_a,
     validate_b,
     validate_c,
