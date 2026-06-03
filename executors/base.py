@@ -1,16 +1,15 @@
 from abc import ABC, abstractmethod
 from typing import List, Any
-
+from dag.node import DagNode
 
 class Executor(ABC):
 
     @abstractmethod
     def submit(
         self,
-        node,
-        dep_results: List[Any],
-        kwargs: dict[str, Any],
-        context: Any,
+        node: DagNode,
+        args: List[Any],
+        kargs: dict[str, Any],
     ):
         pass
 

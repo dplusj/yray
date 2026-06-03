@@ -1,32 +1,135 @@
 from __future__ import annotations
 from uuid import uuid4
 from dataclasses import dataclass, field
-from typing import Generic, TypeVar, Any
+from typing import Generic, TypeVar, Any, Callable
+import inspect
 
 from dag.task import Task
 
 T = TypeVar("T")
 U = TypeVar("U")
 
+@dataclass
+class TaskIR:
+    node_id: str
+    fn: Callable[..., Any]
+    bindings: dict[str, Any]
+    deps: list[str]
 
 @dataclass
 class DagNode(Generic[T]):
     node_id: str = field(default_factory=lambda: str(uuid4()))
-    task: Task[T] = field(default=None)
-    deps: tuple[DagNode[Any], ...] = ()
-    kwargs: dict[str, Any] = field(default_factory=lambda: {})
+    task: Task[T] = None
 
-    # def __call__(self, *deps: DagNode[Any]) -> DagNode[T]:
-    #     """
-    #     Optional functional style:
-    #         node = train(load())
-    #     """
-    #     return DagNode(task=self.task, deps=deps)
+    # dependency graph edges
+    deps: tuple["DagNode[Any]", ...] = ()
+
+    # parameter → value OR parameter → node_id reference
+    bindings: dict[str, Any] = field(default_factory=dict)
     
-def build_node(task: Task[T], *deps: DagNode[Any], **kwargs: Any) -> DagNode[T]:
+# def build_node(
+#     task: Task[T],
+#     *args: Any,
+#     **kwargs: Any,
+# ) -> DagNode[T]:
+
+#     sig = task.signature
+#     params = list(sig.parameters.values())
+
+#     bindings: dict[str, Any] = {}
+#     deps: list[DagNode[Any]] = []
+
+#     arg_i = 0
+
+#     for p in params:
+
+#         if p.name == "context":
+#             continue  # injected by engine later
+
+#         # keyword override
+#         if p.name in kwargs:
+#             bindings[p.name] = kwargs[p.name]
+#             continue
+
+#         if arg_i >= len(args):
+#             raise TypeError(f"{task.name}: missing argument '{p.name}'")
+
+#         v = args[arg_i]
+#         arg_i += 1
+
+#         if isinstance(v, DagNode):
+#             deps.append(v)
+#             bindings[p.name] = v.node_id  # symbolic reference
+#         else:
+#             bindings[p.name] = v
+
+#     if arg_i < len(args):
+#         raise TypeError(f"{task.name}: too many positional arguments")
+
+#     return DagNode(
+#         task=task,
+#         deps=tuple(deps),
+#         bindings=bindings,
+#     )
+
+def build_node(
+    task: Task[T],
+    *args: Any,
+    **kwargs: Any,
+) -> DagNode[T]:
+
+    sig = task.signature
+    params = list(sig.parameters.values())
+
+    bindings: dict[str, Any] = {}
+    deps: list[DagNode[Any]] = []
+
+    arg_i = 0
+
+    for p in params:
+
+        # 1. context is special (runtime injected)
+        if p.name == "context":
+            continue
+
+        # 2. VAR_POSITIONAL => collect ALL remaining args
+        if p.kind == inspect.Parameter.VAR_POSITIONAL:
+
+            varargs = []
+
+            while arg_i < len(args):
+                v = args[arg_i]
+                arg_i += 1
+
+                if isinstance(v, DagNode):
+                    deps.append(v)
+                varargs.append(v)
+
+            bindings[p.name] = varargs
+            continue
+
+        # 3. keyword override
+        if p.name in kwargs:
+            bindings[p.name] = kwargs[p.name]
+            continue
+
+        # 4. normal positional binding
+        if arg_i >= len(args):
+            raise TypeError(f"{task.name}: missing argument '{p.name}'")
+
+        v = args[arg_i]
+        arg_i += 1
+
+        if isinstance(v, DagNode):
+            deps.append(v)
+        bindings[p.name] = v
+
+    # 5. leftover args only allowed if VAR_POSITIONAL existed
+    if arg_i < len(args):
+        raise TypeError(f"{task.name}: too many positional arguments")
+
     return DagNode(
-        node_id=str(uuid4()),
         task=task,
         deps=tuple(deps),
-        kwargs=kwargs,
+        bindings=bindings,
     )

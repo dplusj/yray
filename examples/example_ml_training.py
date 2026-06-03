@@ -48,10 +48,7 @@ class SmallMLP(nn.Module):
 #
 
 @task
-def load_features(
-    *,
-    context: Context,
-):
+def load_features():
 
     print("Loading dataset")
 
@@ -76,11 +73,7 @@ def load_features(
 # Transform / normalization
 #
 @task
-def normalize_features(
-    data,
-    *,
-    context: Context,
-):
+def normalize_features(data):
 
     print("Normalizing features")
 
@@ -109,11 +102,9 @@ def normalize_features(
 @task
 def train_model(
     data,
-    *,
     hidden_size,
     lr,
     epochs,
-    context: Context,
 ):
 
     print(
@@ -183,9 +174,7 @@ def train_model(
 
 @task
 def validate_model(
-    result,
-    *,
-    context: Context,
+    result
 ):
 
     print("Running validation")
@@ -229,7 +218,6 @@ def validate_model(
 @task
 def compare_models(
     *results,
-    context: Context,
 ):
 
     print("\n=== MODEL COMPARISON ===")
@@ -314,9 +302,9 @@ validate_c = build_node(validate_model, train_c)
 
 final_graph = build_node(
     compare_models,
-    *[validate_a,
+    validate_a,
     validate_b,
-    validate_c]
+    validate_c
 )
 
 

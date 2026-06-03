@@ -11,10 +11,7 @@ import time
 from datetime import datetime, timedelta
 
 @task
-def load_prices(
-    *,
-    context: Context,
-) -> list[int]:
+def load_prices() -> list[int]:
 
     print("loading")
 
@@ -24,8 +21,6 @@ def load_prices(
 @task
 def feature_engineering(
     prices: list[int],
-    *,
-    context: Context,
 ) -> list[int]:
 
     print("features")
@@ -36,8 +31,6 @@ def feature_engineering(
 
 @task
 def train_model(
-    features: list[int],
-    *,
     context: Context,
 ) -> str:
 
@@ -49,8 +42,6 @@ def train_model(
 @task
 def compute_metrics(
     features: list[int],
-    *,
-    context: Context,
 ) -> dict:
 
     print("metrics")
@@ -64,7 +55,7 @@ if __name__ == "__main__":
 
     price_node = build_node(load_prices)
     feature_node = build_node(feature_engineering, price_node)
-    model_node = build_node(train_model, feature_node)
+    model_node = build_node(train_model)
     metrics_node = build_node(compute_metrics, feature_node)
 
     pipeline = Pipeline(
