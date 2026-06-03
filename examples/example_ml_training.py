@@ -2,16 +2,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Callable, Any
-import uuid
+from dag.context import Context
 
 import torch
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
 
-from executors.ray_executor import RayExecutor
-from dag.node import DAGNode
+from dag.pipeline import Pipeline
+from executors.plan import Planner
 from executors.engine import Engine
-from dag.api import task
+from executors.ray_executor import RayExecutor
+from dag.task import task
+from dag.node import build_node
+from datetime import datetime
+import time
+
 
 
 # ============================================================
@@ -42,8 +47,11 @@ class SmallMLP(nn.Module):
 # Load feature
 #
 
-@task()
-def load_features():
+@task
+def load_features(
+    *,
+    context: Context,
+):
 
     print("Loading dataset")
 
@@ -67,8 +75,12 @@ def load_features():
 # Node 2
 # Transform / normalization
 #
-@task()
-def normalize_features(data):
+@task
+def normalize_features(
+    data,
+    *,
+    context: Context,
+):
 
     print("Normalizing features")
 
@@ -94,12 +106,14 @@ def normalize_features(data):
 # Training
 #
 
-@task()
+@task
 def train_model(
     data,
+    *,
     hidden_size,
     lr,
     epochs,
+    context: Context,
 ):
 
     print(
@@ -167,8 +181,12 @@ def train_model(
 # Validation
 #
 
-@task()
-def validate_model(result):
+@task
+def validate_model(
+    result,
+    *,
+    context: Context,
+):
 
     print("Running validation")
 
@@ -208,8 +226,11 @@ def validate_model(result):
 # Compare all pipelines
 #
 
-@task()
-def compare_models(*results):
+@task
+def compare_models(
+    *results,
+    context: Context,
+):
 
     print("\n=== MODEL COMPARISON ===")
 
@@ -237,61 +258,65 @@ def compare_models(*results):
 # Shared upstream pipeline
 #
 
-dataset = load_features()
+feature_node = build_node(load_features)
 
-normalized = normalize_features(dataset)
+normalized_node = build_node(normalize_features, feature_node)
 
 
 #
 # Pipeline A
 #
 
-train_a = train_model(
-    normalized,
+train_a = build_node(
+    train_model,
+    normalized_node,
     hidden_size=16,
     lr=1e-3,
     epochs=5,
 )
 
-validate_a = validate_model(train_a)
+validate_a = build_node(validate_model, train_a)
 
 
 #
 # Pipeline B
 #
 
-train_b = train_model(
-    normalized,
+train_b = build_node(
+    train_model,
+    normalized_node,
     hidden_size=64,
     lr=1e-3,
     epochs=5,
 )
 
-validate_b = validate_model(train_b)
+validate_b = build_node(validate_model, train_b)
 
 
 #
 # Pipeline C
 #
 
-train_c = train_model(
-    normalized,
+train_c = build_node(
+    train_model,
+    normalized_node,
     hidden_size=128,
     lr=1e-4,
     epochs=5,
 )
 
-validate_c = validate_model(train_c)
+validate_c = build_node(validate_model, train_c)
 
 
 #
 # Final DAG sink
 #
 
-final_graph = compare_models(
-    validate_a,
+final_graph = build_node(
+    compare_models,
+    *[validate_a,
     validate_b,
-    validate_c,
+    validate_c]
 )
 
 
@@ -301,13 +326,19 @@ final_graph = compare_models(
 
 if __name__ == "__main__":
 
-    executor = RayExecutor()
-
-    runtime = Engine(executor)
-
-    best_model = runtime.execute(
-        final_graph
+    print(feature_node)
+    print("=======")
+    print(normalized_node)
+    pipeline = Pipeline(
+        outputs={
+            "model": final_graph,
+        },
+        name="example_ml",
     )
 
-    print("\nFINAL RESULT")
+    plan = Planner.compile(pipeline)
+    engine = Engine(RayExecutor())
+    
+    best_model = engine.gather(engine.run(plan, Context(date='2026-06-01')))
+    print("\n=== ALL RESULTS ===")
     print(best_model)

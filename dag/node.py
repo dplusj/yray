@@ -1,32 +1,32 @@
+from __future__ import annotations
+from uuid import uuid4
 from dataclasses import dataclass, field
-from typing import Callable, Any
-import uuid
+from typing import Generic, TypeVar, Any
+
+from dag.task import Task
+
+T = TypeVar("T")
+U = TypeVar("U")
 
 
 @dataclass
-class DAGNode:
-    fn: Callable
-    deps: list["DAGNode"] = field(default_factory=list)
+class DagNode(Generic[T]):
+    node_id: str = field(default_factory=lambda: str(uuid4()))
+    task: Task[T] = field(default=None)
+    deps: tuple[DagNode[Any], ...] = ()
+    kwargs: dict[str, Any] = field(default_factory=lambda: {})
 
-    name: str | None = None
-
-    cpu: int = 1
-    gpu: int = 0
-
-    node_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-
-    kwargs: dict = field(default_factory=dict)
-
-    def __post_init__(self):
-        if self.name is None:
-            self.name = self.fn.__name__
-
-    def __call__(self, *deps, **kwargs):
-        return DAGNode(
-            fn=self.fn,
-            deps=list(deps),
-            name=self.name,
-            cpu=self.cpu,
-            gpu=self.gpu,
-            kwargs=kwargs,
-        )
+    # def __call__(self, *deps: DagNode[Any]) -> DagNode[T]:
+    #     """
+    #     Optional functional style:
+    #         node = train(load())
+    #     """
+    #     return DagNode(task=self.task, deps=deps)
+    
+def build_node(task: Task[T], *deps: DagNode[Any], **kwargs: Any) -> DagNode[T]:
+    return DagNode(
+        node_id=str(uuid4()),
+        task=task,
+        deps=tuple(deps),
+        kwargs=kwargs,
+    )
