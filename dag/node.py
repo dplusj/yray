@@ -13,7 +13,10 @@ class Task(Generic[T]):
     name: str
     signature: inspect.Signature
 
-    def __call__(self, *args: Any, **kwargs: Any):
+    def __call__(self, *args: Any, **kwargs: Any)->DagNode[T]:
+        return self.bind(*args, **kwargs)
+    
+    def bind(self, *args: Any, **kwargs: Any)->DagNode[T]:
         return _build_node(
             self,
             *args,
@@ -37,9 +40,9 @@ class TaskIR:
 
 @dataclass
 class DagNode(Generic[T]):
+    task: Task[T] 
     node_id: str = field(default_factory=lambda: str(uuid4()))
-    task: Task[T] = None
-
+    
     # dependency graph edges
     deps: tuple["DagNode[Any]", ...] = ()
 

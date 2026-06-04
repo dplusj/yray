@@ -40,7 +40,7 @@ class Engine:
         sig = node.task.signature
         params = list(sig.parameters.values())
 
-        args = []
+        args: list[Any] = []
         kwargs = {}
 
         # special storage for varargs
