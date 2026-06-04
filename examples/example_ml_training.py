@@ -12,8 +12,7 @@ from dag.pipeline import Pipeline
 from executors.plan import Planner
 from executors.engine import Engine
 from executors.ray_executor import RayExecutor
-from dag.task import task
-from dag.node import build_node
+from dag.node import task
 from datetime import datetime
 import time
 
@@ -246,62 +245,58 @@ def compare_models(
 # Shared upstream pipeline
 #
 
-feature_node = build_node(load_features)
+feature_node = load_features()
 
-normalized_node = build_node(normalize_features, feature_node)
+normalized_node = normalize_features(feature_node)
 
 
 #
 # Pipeline A
 #
 
-train_a = build_node(
-    train_model,
+train_a = train_model(
     normalized_node,
     hidden_size=16,
     lr=1e-3,
     epochs=5,
 )
 
-validate_a = build_node(validate_model, train_a)
+validate_a = validate_model(train_a)
 
 
 #
 # Pipeline B
 #
 
-train_b = build_node(
-    train_model,
+train_b = train_model(
     normalized_node,
     hidden_size=64,
     lr=1e-3,
     epochs=5,
 )
 
-validate_b = build_node(validate_model, train_b)
+validate_b = validate_model(train_b)
 
 
 #
 # Pipeline C
 #
 
-train_c = build_node(
-    train_model,
+train_c = train_model(
     normalized_node,
     hidden_size=128,
     lr=1e-4,
     epochs=5,
 )
 
-validate_c = build_node(validate_model, train_c)
+validate_c = validate_model(train_c)
 
 
 #
 # Final DAG sink
 #
 
-final_graph = build_node(
-    compare_models,
+final_graph = compare_models(
     validate_a,
     validate_b,
     validate_c

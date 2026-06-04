@@ -1,6 +1,5 @@
-from dag.task import task
 from dag.context import Context
-from dag.node import build_node
+from dag.node import task
 
 from dag.pipeline import Pipeline
 from executors.plan import Planner
@@ -31,12 +30,14 @@ def feature_engineering(
 
 @task
 def train_model(
+    features: list[int],
     context: Context,
 ) -> str:
 
+    m = sum(features)/len(features)
     print("training")
 
-    return f"model-{context.date}"
+    return f"model-{context.date}-mean:{m}"
 
 
 @task
@@ -53,10 +54,10 @@ def compute_metrics(
 
 if __name__ == "__main__":
 
-    price_node = build_node(load_prices)
-    feature_node = build_node(feature_engineering, price_node)
-    model_node = build_node(train_model)
-    metrics_node = build_node(compute_metrics, feature_node)
+    price_node = load_prices()
+    feature_node = feature_engineering(price_node)
+    model_node = train_model(feature_node)
+    metrics_node = compute_metrics(feature_node)
 
     pipeline = Pipeline(
         outputs={

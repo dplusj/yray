@@ -4,10 +4,29 @@ from dataclasses import dataclass, field
 from typing import Generic, TypeVar, Any, Callable
 import inspect
 
-from dag.task import Task
-
 T = TypeVar("T")
 U = TypeVar("U")
+
+@dataclass(frozen=True)
+class Task(Generic[T]):
+    fn: Callable[..., T]
+    name: str
+    signature: inspect.Signature
+
+    def __call__(self, *args: Any, **kwargs: Any):
+        return _build_node(
+            self,
+            *args,
+            **kwargs,
+        )
+
+
+def task(fn: Callable[..., T]) -> Task[T]:
+    return Task(
+        fn=fn,
+        name=fn.__name__,
+        signature=inspect.signature(fn),
+    )
 
 @dataclass
 class TaskIR:
@@ -26,53 +45,8 @@ class DagNode(Generic[T]):
 
     # parameter → value OR parameter → node_id reference
     bindings: dict[str, Any] = field(default_factory=dict)
-    
-# def build_node(
-#     task: Task[T],
-#     *args: Any,
-#     **kwargs: Any,
-# ) -> DagNode[T]:
 
-#     sig = task.signature
-#     params = list(sig.parameters.values())
-
-#     bindings: dict[str, Any] = {}
-#     deps: list[DagNode[Any]] = []
-
-#     arg_i = 0
-
-#     for p in params:
-
-#         if p.name == "context":
-#             continue  # injected by engine later
-
-#         # keyword override
-#         if p.name in kwargs:
-#             bindings[p.name] = kwargs[p.name]
-#             continue
-
-#         if arg_i >= len(args):
-#             raise TypeError(f"{task.name}: missing argument '{p.name}'")
-
-#         v = args[arg_i]
-#         arg_i += 1
-
-#         if isinstance(v, DagNode):
-#             deps.append(v)
-#             bindings[p.name] = v.node_id  # symbolic reference
-#         else:
-#             bindings[p.name] = v
-
-#     if arg_i < len(args):
-#         raise TypeError(f"{task.name}: too many positional arguments")
-
-#     return DagNode(
-#         task=task,
-#         deps=tuple(deps),
-#         bindings=bindings,
-#     )
-
-def build_node(
+def _build_node(
     task: Task[T],
     *args: Any,
     **kwargs: Any,
