@@ -2,7 +2,7 @@ import random
 import time
 from datetime import datetime, timedelta
 
-from xray import Context, Engine, Pipeline, Planner, RayExecutor, task
+from yray import Context, Engine, Pipeline, Planner, RayExecutor, task
 
 
 @task

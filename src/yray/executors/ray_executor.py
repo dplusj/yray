@@ -1,8 +1,8 @@
 
 from typing import Any, List
 
-from xray.dag.node import DagNode
-from xray.executors.base import Executor
+from yray.dag.node import DagNode
+from yray.executors.base import Executor
 
 try:
     import ray

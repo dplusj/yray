@@ -1,4 +1,4 @@
-from xray import Context, Engine, LocalExecutor, Pipeline, Planner, task
+from yray import Context, Engine, LocalExecutor, Pipeline, Planner, task
 
 
 def test_local_pipeline():

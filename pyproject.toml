@@ -1,5 +1,5 @@
 [project]
-name = "xray"
+name = "yray"
 version = "0.1.0"
 description = "A minimal DAG execution engine with pluggable executors"
 readme = "README.md"
@@ -38,16 +38,16 @@ ray = [
 
 
 [project.urls]
-Homepage = "https://github.com/dplusj/xray"
-Repository = "https://github.com/dplusj/xray"
-Issues = "https://github.com/dplusj/xray/issues"
+Homepage = "https://github.com/dplusj/yray"
+Repository = "https://github.com/dplusj/yray"
+Issues = "https://github.com/dplusj/yray/issues"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/xray"]
+packages = ["src/yray"]
 
 [tool.ruff.lint]
 extend-select = ["I"]

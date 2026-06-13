@@ -1,8 +1,8 @@
-# XRay
+# yray
 
 A lightweight DAG execution framework for building reusable data, machine learning, and batch-processing pipelines.
 
-XRay separates **workflow definition**, **planning**, and **execution**, allowing the same pipeline to run across different execution environments without modification.
+yray separates **workflow definition**, **planning**, and **execution**, allowing the same pipeline to run across different execution environments without modification.
 
 ---
 
@@ -21,13 +21,13 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ---
 
-## Install XRay (development)
+## Install yray (development)
 
 Clone the repository:
 
 ```bash
-git clone https://github.com/dplusj/xray.git
-cd xray
+git clone https://github.com/dplusj/yray.git
+cd yray
 ```
 
 Install dependencies:
@@ -47,14 +47,14 @@ uv sync --extra ray
 or
 
 ```bash
-pip install "xray[ray]"
+pip install "yray[ray]"
 ```
 
 ---
 
 # Running Examples
 
-XRay includes two example pipelines:
+yray includes two example pipelines:
 
 ```text
 examples/
@@ -117,7 +117,7 @@ uv build
 
 Most workflow systems tightly couple DAG definition and execution.
 
-XRay treats a workflow as a reusable intermediate representation (IR):
+yray treats a workflow as a reusable intermediate representation (IR):
 
 ```text
 Task
@@ -186,7 +186,7 @@ A pipeline is defined once and can be executed repeatedly across different runti
 A Task defines a unit of computation.
 
 ```python
-from xray import task, Context
+from yray import task, Context
 
 @task
 def load_features(*, context: Context):
@@ -226,7 +226,7 @@ normalize_features
 A Pipeline defines final outputs of a workflow.
 
 ```python
-from xray import Pipeline
+from yray import Pipeline
 
 pipeline = Pipeline(
     outputs={
@@ -243,7 +243,7 @@ pipeline = Pipeline(
 Runtime information injected by the executor.
 
 ```python
-from xray import Context
+from yray import Context
 
 ctx = Context(
     date="2024-01-01",
@@ -270,7 +270,7 @@ def load_features(*, context: Context):
 Converts Pipeline → ExecutionPlan.
 
 ```python
-from xray import Planner
+from yray import Planner
 
 plan = Planner.compile(pipeline)
 ```
@@ -289,7 +289,7 @@ Available:
 - RayExecutor (optional)
 
 ```python
-from xray import Engine, LocalExecutor
+from yray import Engine, LocalExecutor
 
 engine = Engine(executor=LocalExecutor())
 ```
@@ -301,7 +301,7 @@ engine = Engine(executor=LocalExecutor())
 ## Define Tasks
 
 ```python
-from xray import task, Context
+from yray import task, Context
 
 @task
 def load_features(*, context: Context):
@@ -345,7 +345,7 @@ model = train_model(
 ## Define Pipeline
 
 ```python
-from xray import Pipeline
+from yray import Pipeline
 
 pipeline = Pipeline(
     outputs={
@@ -359,7 +359,7 @@ pipeline = Pipeline(
 ## Compile Plan
 
 ```python
-from xray import Planner
+from yray import Planner
 
 plan = Planner.compile(pipeline)
 ```
@@ -369,7 +369,7 @@ plan = Planner.compile(pipeline)
 ## Execute (Local)
 
 ```python
-from xray import Engine, LocalExecutor, Context
+from yray import Engine, LocalExecutor, Context
 
 engine = Engine(
     executor=LocalExecutor(),
@@ -395,8 +395,8 @@ print(result)
 ## Execute (Ray)
 
 ```python
-from xray import Engine, Planner, Context
-from xray.executors import RayExecutor
+from yray import Engine, Planner, Context
+from yray.executors import RayExecutor
 
 plan = Planner.compile(pipeline)
 
@@ -450,7 +450,7 @@ load → normalize
 # Multi-Context Execution
 
 ```python
-from xray import Context
+from yray import Context
 
 contexts = [
     Context(date="2024-01-01"),
