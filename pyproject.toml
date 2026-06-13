@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "A minimal DAG execution engine with pluggable executors"
 readme = "README.md"
 requires-python = ">=3.12"
+license = { text = "MIT" }
 
 authors = [
     { name = "dplusj", email = "jerrydeng.ai@gmail.com" }
@@ -30,9 +31,6 @@ classifiers = [
 ]
 
 dependencies = []
-
-[project]
-license = { text = "MIT" }
 
 [project.optional-dependencies]
 ray = [
