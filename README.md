@@ -1,5 +1,7 @@
 # yray
 
+[![PyPI version](https://badge.fury.io/py/yray.svg)](https://pypi.org/project/yray/)
+
 A lightweight DAG execution framework for building reusable data, machine learning, and batch-processing pipelines.
 
 yray separates **workflow definition**, **planning**, and **execution**, allowing the same pipeline to run across different execution environments without modification.
