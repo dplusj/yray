@@ -6,6 +6,113 @@ XRay separates **workflow definition**, **planning**, and **execution**, allowin
 
 ---
 
+# Installation
+
+## Requirements
+
+- Python 3.12+
+- uv (recommended)
+
+Install uv:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+---
+
+## Install XRay (development)
+
+Clone the repository:
+
+```bash
+git clone https://github.com/dplusj/xray.git
+cd xray
+```
+
+Install dependencies:
+
+```bash
+uv sync
+```
+
+---
+
+## Install Ray support (optional)
+
+```bash
+uv sync --extra ray
+```
+
+or
+
+```bash
+pip install "xray[ray]"
+```
+
+---
+
+# Running Examples
+
+XRay includes two example pipelines:
+
+```text
+examples/
+├── local_pipeline.py
+└── ray_pipeline.py
+```
+
+---
+
+## Local Executor Example
+
+Run pipeline locally without any distributed system:
+
+```bash
+uv run python examples/local_pipeline.py
+```
+
+This uses:
+
+- LocalExecutor
+- In-process execution
+- Deterministic DAG evaluation
+
+---
+
+## Ray Executor Example
+
+Run the same pipeline on Ray:
+
+```bash
+uv sync --extra ray
+uv run python examples/ray_pipeline.py
+```
+
+This uses:
+
+- RayExecutor
+- Distributed task scheduling
+- Remote execution
+
+---
+
+## Run Tests
+
+```bash
+uv run pytest
+```
+
+---
+
+## Build Package
+
+```bash
+uv build
+```
+
+---
+
 # Motivation
 
 Most workflow systems tightly couple DAG definition and execution.
@@ -70,14 +177,6 @@ A pipeline is defined once and can be executed repeatedly across different runti
        LocalExecutor             RayExecutor              SlurmExecutor
 ```
 
-The architecture intentionally separates:
-
-- **What to compute** → Task
-- **How computations depend on each other** → DagNode
-- **What outputs define a workflow** → Pipeline
-- **How execution is planned** → Planner
-- **Where execution happens** → Executor
-
 ---
 
 # Core Concepts
@@ -86,65 +185,49 @@ The architecture intentionally separates:
 
 A Task defines a unit of computation.
 
-Tasks are pure computation definitions and contain no scheduling logic.
-
 ```python
+from xray import task, Context
+
 @task
-def load_features(
-    *,
-    context: Context,
-):
-    ...
+def load_features(*, context: Context):
+    return [1, 2, 3, 4]
 ```
 
-A Task:
+Tasks:
 
-- Defines computation logic
-- Declares inputs and outputs
-- Receives runtime context
-- Remains backend-independent
+- Define computation logic
+- Are backend-independent
+- Receive runtime Context
 
 ---
 
 ## DagNode
 
-A DagNode represents a Task inside a DAG.
+A DagNode wraps a Task and defines dependencies.
+
+```python
+features = load_features()
+
+normalized = normalize_features(features)
+```
+
+Represents:
 
 ```text
 load_features
       ↓
 normalize_features
-      ↓
-train_model
-```
-
-A DagNode contains:
-
-- Task reference
-- Dependency edges
-- Static configuration parameters
-- Runtime metadata
-
-Example:
-
-```python
-normalized = normalize_features(features)
-
-model = train_model(
-    normalized,
-    hidden_size=64,
-    lr=1e-3,
-    epochs=10,
-)
 ```
 
 ---
 
 ## Pipeline
 
-A Pipeline defines one or more workflow outputs.
+A Pipeline defines final outputs of a workflow.
 
 ```python
+from xray import Pipeline
+
 pipeline = Pipeline(
     outputs={
         "model": model,
@@ -153,94 +236,63 @@ pipeline = Pipeline(
 )
 ```
 
-A Pipeline is reusable and contains no runtime state.
-
 ---
 
 ## Context
 
-A Context contains runtime information injected by the executor.
+Runtime information injected by the executor.
 
 ```python
-@dataclass(frozen=True)
-class Context:
-    date: str | None = None
-    params: dict[str, object] | None = None
-```
+from xray import Context
 
-Example:
-
-```python
-Context(
-    date="2024-01-01",
-)
-```
-
-Additional runtime parameters:
-
-```python
-Context(
+ctx = Context(
     date="2024-01-01",
     params={
         "symbol": "AAPL",
         "region": "US",
-        "experiment": "baseline",
     },
 )
 ```
 
-Tasks access runtime information through Context:
+Used inside tasks:
 
 ```python
 @task
-def load_features(
-    *,
-    context: Context,
-):
+def load_features(*, context: Context):
     symbol = context.params["symbol"]
-
-    ...
+    return symbol
 ```
-
-Context is not part of DAG typing and is supplied only at execution time.
 
 ---
 
 ## Planner
 
-The Planner converts a Pipeline into an executable execution plan.
-
-Responsibilities:
-
-- DAG traversal
-- Dependency resolution
-- Topological ordering
-- Execution planning
+Converts Pipeline → ExecutionPlan.
 
 ```python
+from xray import Planner
+
 plan = Planner.compile(pipeline)
 ```
 
-Planning is performed once and can be reused across many Contexts.
+Plans are reusable across contexts.
 
 ---
 
 ## Executor
 
-The Executor executes an ExecutionPlan on a specific runtime backend.
+Executes a plan on a backend.
 
-Available backends:
+Available:
 
 - LocalExecutor
-- RayExecutor
+- RayExecutor (optional)
 
-Future backends:
+```python
+from xray import Engine, LocalExecutor
 
-- SlurmExecutor
-- HTCondorExecutor
-- KubernetesExecutor
-
-The Pipeline and Planner remain unchanged regardless of execution environment.
+engine = Engine(executor=LocalExecutor())
+```
 
 ---
 
@@ -249,37 +301,21 @@ The Pipeline and Planner remain unchanged regardless of execution environment.
 ## Define Tasks
 
 ```python
+from xray import task, Context
+
 @task
-def load_features(
-    *,
-    context: Context,
-):
+def load_features(*, context: Context):
     return [1, 2, 3, 4, 5]
 
 
 @task
-def normalize_features(
-    data,
-    *,
-    context: Context,
-):
+def normalize_features(data, *, context: Context):
     total = sum(data)
-
-    return [
-        x / total
-        for x in data
-    ]
+    return [x / total for x in data]
 
 
 @task
-def train_model(
-    data,
-    *,
-    hidden_size: int,
-    lr: float,
-    epochs: int,
-    context: Context,
-):
+def train_model(data, *, hidden_size: int, lr: float, epochs: int, context: Context):
     return {
         "hidden_size": hidden_size,
         "lr": lr,
@@ -287,7 +323,9 @@ def train_model(
     }
 ```
 
-## Build a DAG
+---
+
+## Build DAG
 
 ```python
 features = load_features()
@@ -302,19 +340,13 @@ model = train_model(
 )
 ```
 
-Graph:
+---
 
-```text
-load_features
-      ↓
-normalize_features
-      ↓
-train_model
-```
-
-## Define a Pipeline
+## Define Pipeline
 
 ```python
+from xray import Pipeline
+
 pipeline = Pipeline(
     outputs={
         "model": model,
@@ -322,19 +354,25 @@ pipeline = Pipeline(
 )
 ```
 
-## Compile Once
+---
+
+## Compile Plan
 
 ```python
+from xray import Planner
+
 plan = Planner.compile(pipeline)
 ```
 
-The execution plan can be reused indefinitely.
+---
 
-## Execute
+## Execute (Local)
 
 ```python
+from xray import Engine, LocalExecutor, Context
+
 engine = Engine(
-    executor=RayExecutor(),
+    executor=LocalExecutor(),
 )
 
 result = engine.gather(
@@ -354,176 +392,124 @@ print(result)
 
 ---
 
-# Multi-Model Training Example
+## Execute (Ray)
 
-Fan-out from a shared feature engineering stage.
+```python
+from xray import Engine, Planner, Context
+from xray.executors import RayExecutor
+
+plan = Planner.compile(pipeline)
+
+engine = Engine(
+    executor=RayExecutor(),
+)
+
+result = engine.gather(
+    engine.run(
+        plan,
+        Context(
+            date="2024-01-01",
+            params={
+                "symbol": "AAPL",
+            },
+        ),
+    )
+)
+```
+
+---
+
+# Multi-Model Example
 
 ```python
 features = load_features()
 
 normalized = normalize_features(features)
 
-small_model = train_model(
-    normalized,
-    hidden_size=16,
-    lr=1e-3,
-    epochs=5,
-)
+small = train_model(normalized, hidden_size=16, lr=1e-3, epochs=5)
 
-medium_model = train_model(
-    normalized,
-    hidden_size=64,
-    lr=1e-3,
-    epochs=5,
-)
+medium = train_model(normalized, hidden_size=64, lr=1e-3, epochs=5)
 
-large_model = train_model(
-    normalized,
-    hidden_size=128,
-    lr=1e-4,
-    epochs=5,
-)
+large = train_model(normalized, hidden_size=128, lr=1e-4, epochs=5)
 ```
 
 Graph:
 
 ```text
-                 train_small
+                 small
                 /
-load -> normalize
+load → normalize
                 \
-                 train_medium
+                 medium
                 \
-                 train_large
+                 large
 ```
-
-Shared dependencies execute only once.
 
 ---
 
-# Execute Across Multiple Contexts
-
-The same execution plan can be reused across many runtime contexts.
+# Multi-Context Execution
 
 ```python
+from xray import Context
+
 contexts = [
     Context(date="2024-01-01"),
     Context(date="2024-01-02"),
     Context(date="2024-01-03"),
 ]
 
-handles = [
+results = [
     engine.run(plan, ctx)
     for ctx in contexts
 ]
 
-results = engine.gather(handles)
+final = engine.gather(results)
 ```
-
-Typical use cases:
-
-- Historical backtesting
-- Daily batch processing
-- Hyperparameter sweeps
-- Multi-symbol research
-- Scenario analysis
-- Regional simulations
 
 ---
 
 # Backend Extension
 
-Create a new executor by implementing the Executor interface.
-
 ```python
-class Executor(ABC):
+class Executor:
+    def submit(self, node, deps, kwargs, context):
+        ...
 
-    @abstractmethod
-    def submit(
-        self,
-        node,
-        dep_handles,
-        kwargs,
-        context,
-    ):
-        pass
-
-    @abstractmethod
-    def gather(
-        self,
-        handle,
-    ):
-        pass
+    def gather(self, handle):
+        ...
 ```
 
 Example:
 
 ```python
 class SlurmExecutor(Executor):
-
-    def submit(
-        self,
-        node,
-        dep_handles,
-        kwargs,
-        context,
-    ):
-        ...
-
-    def gather(
-        self,
-        handle,
-    ):
+    def submit(self, node, deps, kwargs, context):
         ...
 ```
 
-No changes are required to Tasks, Pipelines, or the Planner.
+No changes required to DAG or Planner.
 
 ---
 
 # Features
 
 - Typed DAG IR
-- Multi-output pipelines
 - Context-aware execution
-- Topological execution planning
-- Ray backend
-- Backend abstraction layer
-- Fan-in / fan-out DAG support
-- Parallel execution across contexts
+- Planner-based execution separation
+- Local + Ray backends
+- Fan-out DAG support
 - Reusable execution plans
-- Easy extension to Slurm and HTCondor
+- Multi-context execution
 
 ---
 
 # Roadmap
 
-- Persistent task caching
-- Deterministic node hashing
-- Artifact materialization
-- Incremental recomputation
+- Persistent caching
+- DAG visualization
+- Incremental execution
 - Slurm backend
-- HTCondor backend
 - Kubernetes backend
-- Workflow visualization
 - Failure recovery
-- Execution monitoring
-- Pipeline UI
-
----
-
-# Philosophy
-
-XRay aims to be a small execution core rather than a full workflow platform.
-
-The focus is on:
-
-- Explicit DAG construction
-- Reusable execution plans
-- Backend portability
-- Parallel execution
-- Minimal abstractions
-
-Define a workflow once.
-
-Execute it anywhere.
+- Distributed tracing
+```
