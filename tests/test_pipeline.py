@@ -1,4 +1,5 @@
-from xray import Pipeline, task, Engine, LocalExecutor, Context, Planner
+from xray import Context, Engine, LocalExecutor, Pipeline, Planner, task
+
 
 def test_local_pipeline():
     @task

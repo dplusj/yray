@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import List, Any
+from typing import Any, List
+
 from ..dag.node import DagNode
+
 
 class Executor(ABC):
 

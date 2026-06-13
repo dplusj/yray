@@ -1,8 +1,9 @@
 from __future__ import annotations
-from uuid import uuid4
-from dataclasses import dataclass, field
-from typing import Generic, TypeVar, Any, Callable
+
 import inspect
+from dataclasses import dataclass, field
+from typing import Any, Callable, Generic, TypeVar
+from uuid import uuid4
 
 T = TypeVar("T")
 U = TypeVar("U")

@@ -1,7 +1,9 @@
-from xray import Engine, RayExecutor, Pipeline, task, Context, Planner
 import random
 import time
 from datetime import datetime, timedelta
+
+from xray import Context, Engine, Pipeline, Planner, RayExecutor, task
+
 
 @task
 def load_prices() -> list[int]:

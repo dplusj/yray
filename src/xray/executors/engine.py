@@ -1,11 +1,11 @@
 
+import inspect
 from typing import Any
 
-from xray.executors.base import Executor
-from xray.executors.plan import ExecutionPlan
 from xray.dag.context import Context
 from xray.dag.node import DagNode
-import inspect
+from xray.executors.base import Executor
+from xray.executors.plan import ExecutionPlan
 
 
 class Engine:

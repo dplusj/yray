@@ -1,7 +1,9 @@
 
-from xray.executors.base import Executor
-from xray.dag.node import DagNode
 from typing import Any, List
+
+from xray.dag.node import DagNode
+from xray.executors.base import Executor
+
 try:
     import ray
 except ImportError:
