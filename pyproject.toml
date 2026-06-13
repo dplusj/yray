@@ -31,6 +31,9 @@ classifiers = [
 
 dependencies = []
 
+[project]
+license = { text = "MIT" }
+
 [project.optional-dependencies]
 ray = [
     "ray>=2.50",

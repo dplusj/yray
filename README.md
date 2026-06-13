@@ -512,4 +512,3 @@ No changes required to DAG or Planner.
 - Kubernetes backend
 - Failure recovery
 - Distributed tracing
-```
