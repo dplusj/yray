@@ -1,10 +1,4 @@
-from dag.context import Context
-from dag.node import task
-
-from dag.pipeline import Pipeline
-from executors.plan import Planner
-from executors.engine import Engine
-from executors.ray_executor import RayExecutor
+from xray import Engine, LocalExecutor, Pipeline, task, Context, Planner
 import random
 import time
 from datetime import datetime, timedelta
@@ -68,7 +62,7 @@ if __name__ == "__main__":
     )
 
     plan = Planner.compile(pipeline)
-    engine = Engine(RayExecutor())
+    engine = Engine(LocalExecutor())
     # TODO: run longer period to check the change of the performance
     start_time = time.time()
     start = datetime(2024, 1, 1)

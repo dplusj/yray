@@ -1,0 +1,58 @@
+[project]
+name = "xray"
+version = "0.1.0"
+description = "A minimal DAG execution engine with pluggable executors"
+readme = "README.md"
+requires-python = ">=3.12"
+
+authors = [
+    { name = "dplusj", email = "jerrydeng.ai@gmail.com" }
+]
+
+keywords = [
+    "dag",
+    "workflow",
+    "scheduler",
+    "pipeline",
+    "orchestration",
+    "parallel",
+    "runtime",
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+]
+
+dependencies = []
+
+[project.optional-dependencies]
+ray = [
+    "ray>=2.50",
+]
+
+
+[project.urls]
+Homepage = "https://github.com/dplusj/xray"
+Repository = "https://github.com/dplusj/xray"
+Issues = "https://github.com/dplusj/xray/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/xray"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.0",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.12.0",
+    "mypy>=1.17.0",
+]

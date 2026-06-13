@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Any
-from dag.node import DagNode
+from ..dag.node import DagNode
 
 class Executor(ABC):
 
@@ -9,7 +9,7 @@ class Executor(ABC):
         self,
         node: DagNode,
         args: List[Any],
-        kargs: dict[str, Any],
+        kwargs: dict[str, Any],
     ):
         pass
 

@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Any
 
-from dag.node import DagNode
-from dag.pipeline import Pipeline
+from ..dag.node import DagNode
+from ..dag.pipeline import Pipeline
 
 
 @dataclass(frozen=True)
